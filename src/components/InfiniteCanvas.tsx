@@ -338,13 +338,13 @@ export default function InfiniteCanvas() {
   );
 
   if (viewportSize.w === 0) {
-    return <div ref={containerRef} className="w-full h-dvh bg-slate-900 overflow-hidden" />;
+    return <div ref={containerRef} className="w-full h-screen h-dvh bg-slate-900 overflow-hidden" />;
   }
 
   return (
     <div
       ref={containerRef}
-      className={`w-full h-dvh bg-slate-900 overflow-hidden select-none ${
+      className={`w-full h-screen h-dvh bg-slate-900 overflow-hidden select-none ${
         isDragging ? 'cursor-grabbing' : 'cursor-grab'
       }`}
       style={{ touchAction: 'none' }}
