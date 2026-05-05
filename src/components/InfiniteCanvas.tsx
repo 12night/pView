@@ -37,7 +37,6 @@ export default function InfiniteCanvas() {
   const loadingSetRef = useRef<Set<string>>(new Set());
   const pendingQueueRef = useRef<ImageItem[]>([]);
   const activeCountRef = useRef(0);
-  const poolReadyRef = useRef(false);
 
   const [images, setImages] = useState<ImageItem[]>([]);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -45,7 +44,6 @@ export default function InfiniteCanvas() {
   const [isDragging, setIsDragging] = useState(false);
   const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
   const [blobTick, setBlobTick] = useState(0);
-  const [poolReady, setPoolReady] = useState(false);
 
   const offsetRef = useRef(offset);
   const scaleRef = useRef(scale);
@@ -111,8 +109,6 @@ export default function InfiniteCanvas() {
 
       setImages(newImages);
 
-      if (!poolReadyRef.current) return;
-
       const vpCenterX = (bounds.minX + bounds.maxX) / 2;
       const vpCenterY = (bounds.minY + bounds.maxY) / 2;
 
@@ -161,27 +157,22 @@ export default function InfiniteCanvas() {
   }, [initCanvas]);
 
   useEffect(() => {
-    fetch('/api/images')
+    fetch('/images-manifest.json')
       .then((r) => r.json())
       .then((data: { images: ImageInfo[]; total: number }) => {
         initPool(data.images);
-        poolReadyRef.current = true;
-        setPoolReady(true);
+        clearColumnCache();
+        updateImages(offsetRef.current, scaleRef.current);
+      })
+      .catch(() => {
+        // manifest not available; layout still works with gray placeholders
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!poolReady) return;
-    clearColumnCache();
     updateImages(offset, scale);
-    // Only run when poolReady becomes true
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [poolReady]);
-
-  useEffect(() => {
-    if (!poolReady) return;
-    updateImages(offset, scale);
-  }, [offset, scale, updateImages, poolReady]);
+  }, [offset, scale, updateImages]);
 
   useEffect(() => {
     return () => {
@@ -347,13 +338,13 @@ export default function InfiniteCanvas() {
   );
 
   if (viewportSize.w === 0) {
-    return <div ref={containerRef} className="w-full h-screen bg-slate-900 overflow-hidden" />;
+    return <div ref={containerRef} className="w-full h-dvh bg-slate-900 overflow-hidden" />;
   }
 
   return (
     <div
       ref={containerRef}
-      className={`w-full h-screen bg-slate-900 overflow-hidden select-none ${
+      className={`w-full h-dvh bg-slate-900 overflow-hidden select-none ${
         isDragging ? 'cursor-grabbing' : 'cursor-grab'
       }`}
       style={{ touchAction: 'none' }}
